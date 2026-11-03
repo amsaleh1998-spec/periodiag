@@ -12,6 +12,7 @@ import {
 } from '../../domain/records';
 import * as db from '../../storage/db';
 import { downloadJson, fmtDate, safeFilename } from '../util';
+import { demoRecords } from './demo';
 
 interface Props {
   current: Patient | null;
@@ -60,6 +61,14 @@ export function PatientsView(props: Props) {
     setNewDob('');
     await reload();
     setSelectedId(p.id);
+  };
+
+  const addDemo = async () => {
+    const { patient, exam } = demoRecords();
+    await db.savePatient(patient);
+    await db.saveExam(exam);
+    await reload();
+    setSelectedId(patient.id);
   };
 
   const updatePatient = async (patch: Partial<Patient>) => {
@@ -199,6 +208,9 @@ export function PatientsView(props: Props) {
             </button>
             <button className="btn" onClick={() => fileRef.current?.click()}>
               Import…
+            </button>
+            <button className="btn" onClick={() => void addDemo()} title="Adds a sample patient with a charted exam">
+              Load demo patient
             </button>
             <input
               ref={fileRef}

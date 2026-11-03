@@ -16,7 +16,7 @@ import {
 } from '../../domain/teeth';
 import { COLORS, JAW_W, SurfaceDrawing, TW, VIEW_H, rowOf, siteX } from './drawing';
 
-const LABEL_W = 64;
+const LABEL_W = 74;
 const ROW_H = 9;
 const GAP = 14;
 export const FULL_W = LABEL_W + JAW_W + 4;
@@ -130,7 +130,7 @@ function JawBlock({ chart, arch, y0 }: { chart: Chart; arch: Arch; y0: number })
     }
     // label
     items.push(
-      <text key={`${key}-l`} x={LABEL_W - 4} y={cy + 2.2} fontSize={5.6} textAnchor="end" fill="#5d6b7c" fontFamily={FONT}>
+      <text key={`${key}-l`} x={2} y={cy + 2} fontSize={5.2} fill="#5d6b7c" fontFamily={FONT}>
         {LABELS[r.kind]}
       </text>,
     );
@@ -201,7 +201,7 @@ function JawBlock({ chart, arch, y0 }: { chart: Chart; arch: Arch; y0: number })
             const flag = r.kind === 'pd' && v >= 5;
             if (flag) items.push(<rect key={`${sk}-bg`} x={sx - TW / 6 + 0.3} y={y + 0.6} width={TW / 3 - 0.6} height={h - 1.2} rx={1} fill="#fde3e3" />);
             items.push(
-              <text key={sk} x={sx} y={cy + 2} fontSize={r.kind === 'cal' ? 5 : 5.6} textAnchor="middle" fontFamily={FONT}
+              <text key={sk} x={sx} y={cy + 2} fontSize={r.kind === 'pd' ? 5.6 : r.kind === 'gm' && v < 0 ? 4.6 : 5} textAnchor="middle" fontFamily={FONT}
                 fill={flag ? COLORS.flag : r.kind === 'cal' ? '#5d6b7c' : '#1b2430'} fontWeight={flag ? 'bold' : undefined}>
                 {v < 0 ? `−${-v}` : v}
               </text>,

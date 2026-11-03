@@ -4,6 +4,8 @@ import type { Exam, Patient } from '../domain/records';
 import * as db from '../storage/db';
 import { ChartEntry } from './charting/ChartEntry';
 import { ChartView } from './chartview/ChartView';
+import { PdfButton } from './pdf/PdfButton';
+import { UpdateBanner } from './UpdateBanner';
 import { Wizard } from './wizard/Wizard';
 import { PatientsView } from './patients/PatientsView';
 import { fmtDate } from './util';
@@ -107,9 +109,11 @@ export function App() {
               {t.label}
             </button>
           ))}
+          {exam && <PdfButton exam={exam} patient={patient} exams={exams} />}
         </nav>
       </header>
       <main>
+        <UpdateBanner beforeReload={flush} />
         {tab === 'patients' && (
           <PatientsView
             current={patient}
