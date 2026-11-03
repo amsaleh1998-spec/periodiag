@@ -3,10 +3,11 @@ import type { Chart } from '../domain/chart';
 import type { Exam, Patient } from '../domain/records';
 import * as db from '../storage/db';
 import { ChartEntry } from './charting/ChartEntry';
+import { ChartView } from './chartview/ChartView';
 import { PatientsView } from './patients/PatientsView';
 import { fmtDate } from './util';
 
-export type Tab = 'patients' | 'entry';
+export type Tab = 'patients' | 'entry' | 'chart';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('patients');
@@ -75,6 +76,7 @@ export function App() {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'patients', label: 'Patients' },
     { id: 'entry', label: 'Charting' },
+    { id: 'chart', label: 'Chart & summary' },
   ];
 
   return (
@@ -132,6 +134,7 @@ export function App() {
           />
         )}
         {tab === 'entry' && exam && <ChartEntry exam={exam} setChart={setChart} updateExam={updateExam} />}
+        {tab === 'chart' && exam && <ChartView chart={exam.chart} />}
       </main>
     </>
   );
