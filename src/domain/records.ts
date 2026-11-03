@@ -3,8 +3,10 @@
 import { emptyChart, emptyTooth, type Chart, type ToothData } from './chart';
 import { ALL_TEETH, SITES, furcationEntrances } from './teeth';
 import { emptyInputs, type ClinicalInputs, type Override } from './classify/types';
+import { PRESETS, emptySurvey, type ExtraRadiograph, type PresetId, type RadiographImageRef, type RadiographSurvey } from './radiographs';
 
-export const SCHEMA_VERSION = 1;
+/** v2 adds radiograph surveys and embedded images. v1 files are still accepted. */
+export const SCHEMA_VERSION = 2;
 export const APP_ID = 'periodiag';
 
 export interface Patient {
@@ -25,11 +27,27 @@ export interface Exam {
   chart: Chart;
   inputs: ClinicalInputs;
   override?: Override;
+  /** Full-mouth radiographic survey (images stored separately, referenced by id). */
+  radiographs?: RadiographSurvey;
   /** Final diagnosis label and stage at the time of saving (for history: stage never goes down). */
   finalLabel?: string;
   finalStage?: 1 | 2 | 3 | 4;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A radiograph embedded in an export file (base64 without the data: prefix). */
+export interface ExportImage {
+  id: string;
+  examId: string;
+  patientId: string;
+  name: string;
+  type: string;
+  width: number;
+  height: number;
+  addedAt: string;
+  data: string;
+  thumb: string;
 }
 
 export interface ExportFile {
@@ -38,6 +56,7 @@ export interface ExportFile {
   exportedAt: string;
   patients: Patient[];
   exams: Exam[];
+  images: ExportImage[];
 }
 
 export function newId(): string {
@@ -81,8 +100,8 @@ export function newExam(patientId: string, previous?: Exam): Exam {
   return { id: newId(), patientId, date: todayIso(), chart, inputs: emptyInputs(), createdAt: now, updatedAt: now };
 }
 
-export function buildExport(patients: Patient[], exams: Exam[]): ExportFile {
-  return { app: APP_ID, schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), patients, exams };
+export function buildExport(patients: Patient[], exams: Exam[], images: ExportImage[] = []): ExportFile {
+  return { app: APP_ID, schemaVersion: SCHEMA_VERSION, exportedAt: new Date().toISOString(), patients, exams, images };
 }
 
 // ---------------------------------------------------------------- validation
@@ -141,6 +160,40 @@ function sanitizeInputs(raw: unknown): ClinicalInputs {
   return merged as ClinicalInputs;
 }
 
+function sanitizeRef(raw: unknown): RadiographImageRef | null {
+  if (!isObj(raw) || !isStr(raw.imageId)) return null;
+  return {
+    imageId: raw.imageId,
+    fileName: isStr(raw.fileName) ? raw.fileName : undefined,
+    addedAt: isStr(raw.addedAt) ? raw.addedAt : new Date().toISOString(),
+    note: isStr(raw.note) ? raw.note : undefined,
+  };
+}
+
+export function sanitizeSurvey(raw: unknown): RadiographSurvey | undefined {
+  if (!isObj(raw)) return undefined;
+  const preset: PresetId = isStr(raw.preset) && raw.preset in PRESETS ? (raw.preset as PresetId) : 'fmx18';
+  const survey = emptySurvey(preset);
+  survey.panoramic = raw.panoramic === true;
+  survey.date = isStr(raw.date) ? raw.date : undefined;
+  survey.notes = isStr(raw.notes) ? raw.notes : undefined;
+  if (isObj(raw.slots)) {
+    for (const [k, v] of Object.entries(raw.slots)) {
+      const ref = sanitizeRef(v);
+      if (ref) survey.slots[k] = ref;
+    }
+  }
+  if (Array.isArray(raw.extras)) {
+    survey.extras = raw.extras
+      .map((e): ExtraRadiograph | null => {
+        const ref = sanitizeRef(e);
+        return ref && isObj(e) && isStr(e.id) ? { ...ref, id: e.id, label: isStr(e.label) ? e.label : 'Radiograph' } : null;
+      })
+      .filter((e): e is ExtraRadiograph => e !== null);
+  }
+  return survey;
+}
+
 export function parseImport(text: string): ExportFile {
   let data: unknown;
   try {
@@ -181,11 +234,32 @@ export function parseImport(text: string): ExportFile {
       chart: sanitizeChart(e.chart),
       inputs: sanitizeInputs(e.inputs),
       override: isObj(e.override) ? (e.override as Override) : undefined,
+      radiographs: sanitizeSurvey(e.radiographs),
       finalLabel: isStr(e.finalLabel) ? e.finalLabel : undefined,
       finalStage: [1, 2, 3, 4].includes(e.finalStage as number) ? (e.finalStage as 1 | 2 | 3 | 4) : undefined,
       createdAt: isStr(e.createdAt) ? e.createdAt : now,
       updatedAt: isStr(e.updatedAt) ? e.updatedAt : now,
     };
   });
-  return { app: APP_ID, schemaVersion: SCHEMA_VERSION, exportedAt: isStr(data.exportedAt) ? data.exportedAt : now, patients, exams };
+  const examIds = new Set(exams.map((e) => e.id));
+  const images: ExportImage[] = (Array.isArray(data.images) ? data.images : []).map((im, i) => {
+    if (!isObj(im) || !isStr(im.id) || !isStr(im.examId) || !isStr(im.data) || !isStr(im.type)) {
+      throw new ImportError(`Image #${i + 1} is malformed.`);
+    }
+    if (!examIds.has(im.examId)) throw new ImportError(`Image #${i + 1} refers to an unknown exam.`);
+    if (!im.type.startsWith('image/')) throw new ImportError(`Image #${i + 1} is not an image (${im.type}).`);
+    return {
+      id: im.id,
+      examId: im.examId,
+      patientId: isStr(im.patientId) ? im.patientId : exams.find((e) => e.id === im.examId)!.patientId,
+      name: isStr(im.name) ? im.name : 'radiograph',
+      type: im.type,
+      width: typeof im.width === 'number' ? im.width : 0,
+      height: typeof im.height === 'number' ? im.height : 0,
+      addedAt: isStr(im.addedAt) ? im.addedAt : now,
+      data: im.data,
+      thumb: isStr(im.thumb) ? im.thumb : im.data,
+    };
+  });
+  return { app: APP_ID, schemaVersion: SCHEMA_VERSION, exportedAt: isStr(data.exportedAt) ? data.exportedAt : now, patients, exams, images };
 }

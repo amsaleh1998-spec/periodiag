@@ -17,7 +17,9 @@ import {
   type Status,
 } from '../../domain/classify';
 import { ageOn, type Exam, type Patient } from '../../domain/records';
+import { surveyProgress } from '../../domain/radiographs';
 import { unit, type Fdi } from '../../domain/teeth';
+import { PdfButton } from '../pdf/PdfButton';
 import { fmtDate } from '../util';
 import { Choices, NumberInput, Question, Reasons, YesNo } from './controls';
 import { effectiveInputs, historyFor, priorForGrading } from './history';
@@ -93,6 +95,9 @@ export function Wizard({ exam, patient, exams, updateExam }: Props) {
         </ul>
         <div className="small muted" style={{ padding: '8px 12px' }}>
           {perio ? 'Periodontitis case: staging & grading questions shown.' : 'Not a periodontitis case: staging questions skipped.'}
+        </div>
+        <div style={{ padding: '4px 12px 8px' }}>
+          <PdfButton exam={exam} patient={patient} exams={exams} sections={['diagnosis']} variant="btn" label="PDF: diagnosis" />
         </div>
       </nav>
       <section className="card">
@@ -210,7 +215,8 @@ function PatientStep({ exam, patient, inputs, setInputs }: StepProps) {
   );
 }
 
-function XrayStep({ inputs, setInputs }: StepProps) {
+function XrayStep({ exam, inputs, setInputs }: StepProps) {
+  const fmx = exam.radiographs ? surveyProgress(exam.radiographs) : undefined;
   const presets = [
     { value: 10, label: 'Coronal third, < 15 %' },
     { value: 25, label: 'Coronal third, 15–33 %' },
@@ -219,6 +225,11 @@ function XrayStep({ inputs, setInputs }: StepProps) {
   ];
   return (
     <>
+      {fmx && fmx.filled > 0 && (
+        <p className="small muted" style={{ marginTop: 0 }}>
+          {fmx.filled} of {fmx.total} survey radiographs are attached in the Radiographs tab.
+        </p>
+      )}
       <Question
         title="Radiographic bone loss at the worst site (% of root length)"
         hint={

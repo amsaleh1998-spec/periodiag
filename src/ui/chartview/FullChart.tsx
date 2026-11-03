@@ -203,7 +203,7 @@ function JawBlock({ chart, arch, y0 }: { chart: Chart; arch: Arch; y0: number })
             items.push(
               <text key={sk} x={sx} y={cy + 2} fontSize={r.kind === 'pd' ? 5.6 : r.kind === 'gm' && v < 0 ? 4.6 : 5} textAnchor="middle" fontFamily={FONT}
                 fill={flag ? COLORS.flag : r.kind === 'cal' ? '#5d6b7c' : '#1b2430'} fontWeight={flag ? 'bold' : undefined}>
-                {v < 0 ? `−${-v}` : v}
+                {v < 0 ? `−${-v}` : r.kind === 'gm' && v > 0 ? `+${v}` : v}
               </text>,
             );
           });

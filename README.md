@@ -13,6 +13,7 @@ with JSON export/import for backup and transfer.
   (upper molars B/MP/DP, lower molars B/L, upper premolars M/D).
 - **CAL = PD − GM**, floored at 0. Bern convention: a **negative GM means recession** (margin apical to the CEJ);
   a positive GM means the margin is coronal to the CEJ. A blank GM is taken as the margin at the CEJ.
+  Recession is the common case, so a typed GM value is negative unless you type `+` first.
 - **Fast entry:** typing a digit stores it and jumps to the next site. Per tooth surface it enters PD ×3, then GM ×3.
   The order is the S-path (18→28 buccal, 28→18 palatal, 38→48 lingual, 48→38 buccal) or the Bern row order.
   Missing teeth are skipped. On tablets the same keys are on an on-screen keypad.
@@ -20,7 +21,8 @@ with JSON export/import for backup and transfer.
   | Key | Action |
   |---|---|
   | `0`–`9` | enter value, advance |
-  | `-` then digit | negative GM (recession) |
+  | digit in a GM field | stored as **negative** (recession), e.g. `2` → −2 |
+  | `+` then digit | positive GM (margin coronal to the CEJ), e.g. `+` `1` → +1 |
   | `.` then digit, or `Shift`+digit | 10–19 |
   | `B` / `P` / `S` | toggle bleeding / plaque / suppuration on the site just entered |
   | `Space`, `Enter`, `Tab` | skip |
@@ -33,7 +35,15 @@ with JSON export/import for backup and transfer.
   mean PD, mean CAL, % BOP, % plaque, number of sites with PD ≥ 4 / ≥ 6.
 - **Diagnosis wizard:** uses the chart and asks only for what the chart can't provide.
   It shows the reasoning for each component, with the deciding criterion marked, and lets the clinician override any part.
-- **PDF export:** A4, page 1 has the vector chart and summary, page 2 the diagnosis with reasoning and the answers entered. It works offline.
+- **Full-mouth radiographic survey:** pick a mount layout (FMX 18 with horizontal or vertical bitewings, 14
+  periapicals, or 4 bitewings, plus an optional panoramic) and tap each position to add its radiograph, or drop a file on it.
+  "Fill empty positions" assigns several files in mount order. Images can be viewed full screen with zoom, brightness,
+  contrast and invert, annotated, swapped by dragging, and supplemented with additional images and findings.
+  JPEG, PNG and WebP are supported; export DICOM/TIFF from the imaging software first.
+- **PDF export:** the header button exports the full report (A4): chart and summary, diagnosis with reasoning and
+  answers, and the radiographic survey (landscape mount page, then notes and additional images). Each page also has its
+  own button to export only that page: *PDF: chart*, *PDF: radiographs*, *PDF: diagnosis*. Works offline.
+- **Backups:** JSON export/import includes the radiographs (embedded), so files can be large.
 
 ## Classification logic (`src/domain/classify`)
 
