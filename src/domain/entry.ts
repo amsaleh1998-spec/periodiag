@@ -71,8 +71,11 @@ export function findField(seq: EntryField[], f: Omit<EntryField, 'surface'>): nu
 
 export interface EntryState {
   index: number;
-  /** '-' was pressed: next digit is negative (GM only). */
-  negative: boolean;
+  /**
+   * '+' was pressed: next GM digit is positive (margin coronal to the CEJ).
+   * Without it, GM digits are entered as negative (recession), the common case.
+   */
+  positive: boolean;
   /** '.' was pressed: next digit is 10 + digit. */
   tens: boolean;
   /** Site of the most recently entered value: target of B / P / S toggles. */
@@ -81,6 +84,7 @@ export interface EntryState {
 
 export type EntryAction =
   | { type: 'digit'; digit: number; tens?: boolean }
+  | { type: 'plus' }
   | { type: 'minus' }
   | { type: 'tens' }
   | { type: 'toggle'; flag: 'bop' | 'plaque' | 'supp' }
@@ -99,7 +103,7 @@ export interface EntryResult {
   edit?: EntryEdit;
 }
 
-export const initialEntryState: EntryState = { index: 0, negative: false, tens: false };
+export const initialEntryState: EntryState = { index: 0, positive: false, tens: false };
 
 function clampIndex(i: number, seq: EntryField[]): number {
   return Math.max(0, Math.min(seq.length - 1, i));
@@ -109,14 +113,15 @@ export function handleEntry(state: EntryState, action: EntryAction, seq: EntryFi
   if (seq.length === 0) return { state };
   const index = clampIndex(state.index, seq);
   const field = seq[index];
-  const reset = { negative: false, tens: false };
+  const reset = { positive: false, tens: false };
 
   switch (action.type) {
     case 'digit': {
       const tens = state.tens || !!action.tens;
       let value = (tens ? 10 : 0) + action.digit;
       if (field.kind === 'gm') {
-        if (state.negative) value = -value;
+        // Gingival margin is negative (recession) unless '+' was typed first; 0 stays 0.
+        if (!state.positive && value !== 0) value = -value;
         value = clampGm(value);
       } else {
         value = clampPd(value);
@@ -126,9 +131,12 @@ export function handleEntry(state: EntryState, action: EntryAction, seq: EntryFi
         edit: { type: 'set', field, value },
       };
     }
+    case 'plus':
+      // Positive values only make sense for the gingival margin.
+      return { state: { ...state, index, positive: field.kind === 'gm' ? !state.positive : false } };
     case 'minus':
-      // Negative values only make sense for the gingival margin.
-      return { state: { ...state, index, negative: field.kind === 'gm' ? !state.negative : false } };
+      // Negative is already the default for GM: '-' just cancels a pending '+'.
+      return { state: { ...state, index, positive: false } };
     case 'tens':
       return { state: { ...state, index, tens: !state.tens } };
     case 'toggle': {
@@ -159,6 +167,10 @@ export function keyToAction(e: { key: string; code?: string; shiftKey?: boolean 
   if (e.shiftKey && digitFromCode) return { type: 'digit', digit: Number(digitFromCode[1]), tens: true };
   if (/^\d$/.test(e.key)) return { type: 'digit', digit: Number(e.key) };
   switch (e.key) {
+    case '+':
+    case '=':
+    case 'Add':
+      return { type: 'plus' };
     case '-':
     case 'Subtract':
       return { type: 'minus' };

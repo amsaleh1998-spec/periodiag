@@ -10,19 +10,20 @@ interface Props {
 export function Keypad({ dispatch, state, field }: Props) {
   const digit = (d: number) => (
     <button key={d} className="key" onClick={() => dispatch({ type: 'digit', digit: d })}>
-      {state.tens ? 10 + d : state.negative ? `−${d}` : d}
+      {field?.kind === 'gm' && d !== 0 ? (state.positive ? '+' : '−') : ''}
+      {state.tens ? 10 + d : d}
     </button>
   );
   return (
     <div className="keypad" onPointerDown={(e) => e.preventDefault() /* keep focus off buttons */}>
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(digit)}
       <button
-        className={`key k-mod ${state.negative ? 'on' : ''}`}
+        className={`key k-mod ${state.positive ? 'on' : ''}`}
         disabled={field?.kind !== 'gm'}
-        onClick={() => dispatch({ type: 'minus' })}
-        title="Negative gingival margin (recession)"
+        onClick={() => dispatch({ type: 'plus' })}
+        title="Positive gingival margin (coronal to the CEJ). Without it, GM values are entered as recession (negative)."
       >
-        −
+        +
       </button>
       <button className={`key k-mod k-small ${state.tens ? 'on' : ''}`} onClick={() => dispatch({ type: 'tens' })}>
         10+

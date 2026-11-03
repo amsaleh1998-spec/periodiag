@@ -60,14 +60,27 @@ describe('entry state machine', () => {
     expect(state.index).toBe(3);
   });
 
-  it('enters negative gingival margins after "-"', () => {
-    const { chart } = run([...digits(3, 3, 3), { type: 'minus' }, ...digits(2), ...digits(0)]);
+  it('enters gingival margins as negative (recession) by default', () => {
+    const { chart } = run([...digits(3, 3, 3), ...digits(2, 0, 1)]);
     expect(chart[18].sites.DB.gm).toBe(-2);
-    expect(chart[18].sites.B.gm).toBe(0);
+    expect(Object.is(chart[18].sites.B.gm, 0)).toBe(true); // 0, not -0
+    expect(chart[18].sites.MB.gm).toBe(-1);
   });
 
-  it('ignores "-" on probing depths', () => {
-    const { chart } = run([{ type: 'minus' }, ...digits(4)]);
+  it('enters a positive gingival margin after "+", for one value only', () => {
+    const { chart } = run([...digits(3, 3, 3), { type: 'plus' }, ...digits(2), ...digits(2)]);
+    expect(chart[18].sites.DB.gm).toBe(2);
+    expect(chart[18].sites.B.gm).toBe(-2);
+  });
+
+  it('combines "+" with 10+ and lets "-" cancel a pending "+"', () => {
+    const { chart } = run([...digits(3, 3, 3), { type: 'plus' }, { type: 'tens' }, ...digits(1), { type: 'plus' }, { type: 'minus' }, ...digits(3)]);
+    expect(chart[18].sites.DB.gm).toBe(11);
+    expect(chart[18].sites.B.gm).toBe(-3);
+  });
+
+  it('ignores "+" on probing depths', () => {
+    const { chart } = run([{ type: 'plus' }, ...digits(4)]);
     expect(chart[18].sites.DB.pd).toBe(4);
   });
 
@@ -101,6 +114,7 @@ describe('keyboard mapping', () => {
   it('maps keys to actions', () => {
     expect(keyToAction({ key: '7' })).toEqual({ type: 'digit', digit: 7 });
     expect(keyToAction({ key: '#', code: 'Digit3', shiftKey: true })).toEqual({ type: 'digit', digit: 3, tens: true });
+    expect(keyToAction({ key: '+' })).toEqual({ type: 'plus' });
     expect(keyToAction({ key: '-' })).toEqual({ type: 'minus' });
     expect(keyToAction({ key: 'b' })).toEqual({ type: 'toggle', flag: 'bop' });
     expect(keyToAction({ key: 'Backspace' })).toEqual({ type: 'back' });

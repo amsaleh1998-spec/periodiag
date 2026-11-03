@@ -180,11 +180,11 @@ export function ChartEntry({ exam, setChart, updateExam }: Props) {
           ) : (
             'No teeth to chart'
           )}
-          {st.negative && <span className="pending">−</span>}
+          {st.positive && <span className="pending">+</span>}
           {st.tens && <span className="pending">1▢</span>}
         </div>
         <span className="help">
-          <kbd>0</kbd>–<kbd>9</kbd> enter &amp; advance · <kbd>-</kbd> negative GM (recession) · <kbd>.</kbd> or <kbd>Shift</kbd>+digit = 10+ ·{' '}
+          <kbd>0</kbd>–<kbd>9</kbd> enter &amp; advance · GM digits are negative (recession); <kbd>+</kbd> first for a positive GM · <kbd>.</kbd> or <kbd>Shift</kbd>+digit = 10+ ·{' '}
           <kbd>B</kbd>/<kbd>P</kbd>/<kbd>S</kbd> bleeding/plaque/suppuration on the last site · <kbd>Space</kbd> skip · <kbd>⌫</kbd> back ·{' '}
           <kbd>←</kbd>
           <kbd>→</kbd> move
@@ -195,7 +195,7 @@ export function ChartEntry({ exam, setChart, updateExam }: Props) {
       <JawGrid arch="lower" showDrawing={showDrawing} {...gridProps} />
 
       <p className="help">
-        Gingival margin: <b>negative = apical to the CEJ (recession)</b>, positive = coronal to the CEJ (swelling). CAL = PD − GM (never below 0).
+        Gingival margin: <b>typed values are negative = apical to the CEJ (recession)</b>; type <kbd>+</kbd> first for a margin coronal to the CEJ (swelling). CAL = PD − GM (never below 0).
         Tap a tooth number to cycle present → missing → implant. Tap mobility / furcation cells to cycle their grades.
       </p>
       {showKeypad && <Keypad dispatch={dispatch} state={st} field={cur} />}
@@ -379,7 +379,7 @@ function SurfaceRow(p: GridProps & { kind: RowKind; surface: Surface; row: reado
                 onClick={() => idx !== undefined && p.dispatch({ type: 'goto', index: idx })}
                 title={`${kind.toUpperCase()} ${t} ${siteLabel(t, s)}`}
               >
-                {v === null ? '' : kind === 'gm' && v < 0 ? `−${-v}` : v}
+                {v === null ? '' : kind === 'gm' && v < 0 ? `−${-v}` : kind === 'gm' && v > 0 ? `+${v}` : v}
               </button>
             );
           });
