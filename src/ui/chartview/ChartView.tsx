@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Chart } from '../../domain/chart';
 import { formatNumber, summarize, type ChartSummary } from '../../domain/metrics';
 import { ALL_TEETH, SITES, siteLabel } from '../../domain/teeth';
@@ -83,13 +84,17 @@ export function ChartLegend() {
   );
 }
 
-export function ChartView({ chart }: { chart: Chart }) {
+export function ChartView({ chart, pdf }: { chart: Chart; pdf?: ReactNode }) {
   const summary = summarize(chart);
   const deep = deepSites(chart);
   return (
     <>
       <section className="card">
-        <h2>Summary</h2>
+        <div className="row" style={{ marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Summary</h2>
+          <span className="spacer" />
+          {pdf}
+        </div>
         <SummaryPanel summary={summary} />
         {deep.length > 0 && (
           <p className="small">

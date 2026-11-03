@@ -13,6 +13,7 @@ import {
 import * as db from '../../storage/db';
 import { downloadJson, fmtDate, safeFilename } from '../util';
 import { demoRecords } from './demo';
+import { fromExportImage, toExportImage } from '../radiographs/images';
 
 interface Props {
   current: Patient | null;
@@ -105,15 +106,17 @@ export function PatientsView(props: Props) {
     setExams((l) => l.filter((x) => x.id !== e.id));
   };
 
-  const exportPatient = () => {
+  const exportPatient = async () => {
     if (!selected) return;
-    downloadJson(`periodiag-${safeFilename(selected.label)}-${todayIso()}.json`, buildExport([selected], exams));
+    await props.beforeChange();
+    const images = await Promise.all((await db.listImagesForPatient(selected.id)).map(toExportImage));
+    downloadJson(`periodiag-${safeFilename(selected.label)}-${todayIso()}.json`, buildExport([selected], await db.listExams(selected.id), images));
   };
 
   const exportAll = async () => {
     await props.beforeChange();
-    const [ps, es] = await Promise.all([db.listPatients(), db.listAllExams()]);
-    downloadJson(`periodiag-backup-${todayIso()}.json`, buildExport(ps, es));
+    const [ps, es, ims] = await Promise.all([db.listPatients(), db.listAllExams(), db.listAllImages()]);
+    downloadJson(`periodiag-backup-${todayIso()}.json`, buildExport(ps, es, await Promise.all(ims.map(toExportImage))));
   };
 
   const [pendingImport, setPendingImport] = useState<ExportFile | null>(null);
@@ -132,8 +135,10 @@ export function PatientsView(props: Props) {
     if (mode === 'replace' && !confirm('Replace ALL records on this device with the imported file?')) return;
     setPendingImport(null);
     await props.beforeChange();
-    await db.importRecords(data.patients, data.exams, mode);
-    setMessage(`Imported ${data.patients.length} patient(s) and ${data.exams.length} exam(s) (${mode}).`);
+    await db.importRecords(data.patients, data.exams, data.images.map(fromExportImage), mode);
+    setMessage(
+      `Imported ${data.patients.length} patient(s), ${data.exams.length} exam(s) and ${data.images.length} radiograph(s) (${mode}).`,
+    );
     await reload();
     if (selectedId) setExams(await db.listExams(selectedId));
   };
@@ -188,7 +193,8 @@ export function PatientsView(props: Props) {
           <h3>Backup</h3>
           {pendingImport && (
             <div className="warning">
-              Import {pendingImport.patients.length} patient(s) and {pendingImport.exams.length} exam(s)?
+              Import {pendingImport.patients.length} patient(s), {pendingImport.exams.length} exam(s) and {pendingImport.images.length}{' '}
+              radiograph(s)?
               <div className="row" style={{ marginTop: 8 }}>
                 <button className="btn sm primary" onClick={() => void applyImport('merge')} title="Records with the same ID are overwritten">
                   Merge
@@ -234,7 +240,7 @@ export function PatientsView(props: Props) {
               <div className="row">
                 <h2 style={{ margin: 0 }}>{selected.label}</h2>
                 <span className="spacer" />
-                <button className="btn" onClick={exportPatient}>
+                <button className="btn" onClick={() => void exportPatient()}>
                   Export patient (JSON)
                 </button>
                 <button className="btn danger" onClick={() => void removePatient()}>

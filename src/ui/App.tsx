@@ -5,12 +5,13 @@ import * as db from '../storage/db';
 import { ChartEntry } from './charting/ChartEntry';
 import { ChartView } from './chartview/ChartView';
 import { PdfButton } from './pdf/PdfButton';
+import { RadiographsView } from './radiographs/RadiographsView';
 import { UpdateBanner } from './UpdateBanner';
 import { Wizard } from './wizard/Wizard';
 import { PatientsView } from './patients/PatientsView';
 import { fmtDate } from './util';
 
-export type Tab = 'patients' | 'entry' | 'chart' | 'diagnosis';
+export type Tab = 'patients' | 'entry' | 'chart' | 'radiographs' | 'diagnosis';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('patients');
@@ -80,6 +81,7 @@ export function App() {
     { id: 'patients', label: 'Patients' },
     { id: 'entry', label: 'Charting' },
     { id: 'chart', label: 'Chart & summary' },
+    { id: 'radiographs', label: 'Radiographs' },
     { id: 'diagnosis', label: 'Diagnosis' },
   ];
 
@@ -140,7 +142,10 @@ export function App() {
           />
         )}
         {tab === 'entry' && exam && <ChartEntry exam={exam} setChart={setChart} updateExam={updateExam} />}
-        {tab === 'chart' && exam && <ChartView chart={exam.chart} />}
+        {tab === 'chart' && exam && (
+          <ChartView chart={exam.chart} pdf={<PdfButton exam={exam} patient={patient} exams={exams} sections={['chart']} variant="btn" label="PDF: chart" />} />
+        )}
+        {tab === 'radiographs' && exam && <RadiographsView exam={exam} patient={patient} exams={exams} updateExam={updateExam} />}
         {tab === 'diagnosis' && exam && <Wizard exam={exam} patient={patient} exams={exams} updateExam={updateExam} />}
       </main>
     </>
