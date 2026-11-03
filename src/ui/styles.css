@@ -48,7 +48,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   padding: 8px 12px; border-radius: 6px; cursor: pointer; min-height: 40px;
 }
 .tab:hover:not(:disabled) { background: rgba(255,255,255,0.12); opacity: 1; }
-.tab.active { background: #fff; color: var(--primary); opacity: 1; font-weight: 600; }
+.tab.active, .tab.active:hover:not(:disabled) { background: #fff; color: var(--primary); opacity: 1; font-weight: 600; }
 .tab:disabled { opacity: 0.35; cursor: default; }
 
 main { padding: 16px; max-width: 1500px; margin: 0 auto; }

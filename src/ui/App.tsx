@@ -4,10 +4,11 @@ import type { Exam, Patient } from '../domain/records';
 import * as db from '../storage/db';
 import { ChartEntry } from './charting/ChartEntry';
 import { ChartView } from './chartview/ChartView';
+import { Wizard } from './wizard/Wizard';
 import { PatientsView } from './patients/PatientsView';
 import { fmtDate } from './util';
 
-export type Tab = 'patients' | 'entry' | 'chart';
+export type Tab = 'patients' | 'entry' | 'chart' | 'diagnosis';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('patients');
@@ -77,6 +78,7 @@ export function App() {
     { id: 'patients', label: 'Patients' },
     { id: 'entry', label: 'Charting' },
     { id: 'chart', label: 'Chart & summary' },
+    { id: 'diagnosis', label: 'Diagnosis' },
   ];
 
   return (
@@ -135,6 +137,7 @@ export function App() {
         )}
         {tab === 'entry' && exam && <ChartEntry exam={exam} setChart={setChart} updateExam={updateExam} />}
         {tab === 'chart' && exam && <ChartView chart={exam.chart} />}
+        {tab === 'diagnosis' && exam && <Wizard exam={exam} patient={patient} exams={exams} updateExam={updateExam} />}
       </main>
     </>
   );
